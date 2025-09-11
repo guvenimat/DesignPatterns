@@ -1,0 +1,379 @@
+@page "/behavioral"
+@using DesignPatterns.Client.Services
+@using DesignPatterns.Client.Models
+@inject IDesignPatternsApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Behavioral Design Patterns</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Behavioral Patterns</li>
+                </ol>
+            </nav>
+            <h1 class="display-4">⚙️ Behavioral Design Patterns</h1>
+            <p class="lead text-muted">Behavioral design patterns are concerned with the communication and interaction between objects. They identify common communication patterns and help to define the responsibility of each object.</p>
+        </div>
+    </div>
+
+    @if (loading)
+    {
+        <div class="row">
+            <div class="col-12 text-center">
+                <div class="spinner-border text-warning" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading behavioral patterns...</p>
+            </div>
+        </div>
+    }
+    else
+    {
+
+        <!-- Pattern Cards -->
+        <div class="row g-4 mb-4">
+            @foreach (var pattern in behavioralPatterns)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 border-warning pattern-card">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="card-title mb-0">
+                                @pattern.Icon @pattern.Name
+                                <span class="badge bg-dark text-warning ms-2 small">@pattern.Difficulty</span>
+                            </h5>
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <p class="card-text">@pattern.Description</p>
+                            <p class="text-muted small"><strong>Purpose:</strong> @pattern.Purpose</p>
+                            <p class="text-muted small"><strong>Example:</strong> @pattern.Example</p>
+                            
+                            @if (pattern.Benefits.Any())
+                            {
+                                <details class="mb-3">
+                                    <summary class="btn btn-sm btn-outline-info">Benefits</summary>
+                                    <ul class="mt-2 small">
+                                        @foreach (var benefit in pattern.Benefits)
+                                        {
+                                            <li>@benefit</li>
+                                        }
+                                    </ul>
+                                </details>
+                            }
+
+                            <div class="mt-auto d-grid gap-2">
+                                <button class="btn btn-warning text-dark" @onclick="() => ExecutePattern(GetPatternEndpoint(pattern.Name))">
+                                    <i class="bi bi-play"></i> Execute Pattern
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Execution Results -->
+        @if (executionResults.Any())
+        {
+            <div class="row">
+                <div class="col-12">
+                    <h3>📊 Execution Results</h3>
+                    @foreach (var result in executionResults.OrderByDescending(r => r.ExecutedAt))
+                    {
+                        <div class="card mb-3 @(result.Success ? "border-success" : "border-danger")">
+                            <div class="card-header @(result.Success ? "bg-success" : "bg-danger") text-white">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">@result.Pattern</h6>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge @(result.Success ? "bg-light text-success" : "bg-light text-danger")">
+                                            @(result.Success ? "Success" : "Failed")
+                                        </span>
+                                        <small>@result.ExecutionTime.TotalMilliseconds ms</small>
+                                    </div>
+                                </div>
+                                <small>@result.ExecutedAt.ToString("HH:mm:ss")</small>
+                            </div>
+                            <div class="card-body">
+                                <p>@result.Description</p>
+                                @if (result.Success && !string.IsNullOrEmpty(result.FormattedResult))
+                                {
+                                    <details>
+                                        <summary class="btn btn-sm btn-outline-secondary">View JSON Result</summary>
+                                        <pre class="mt-2 p-3 bg-light rounded" style="max-height: 400px; overflow-y: auto;"><code>@result.FormattedResult</code></pre>
+                                    </details>
+                                }
+                                @if (!result.Success && !string.IsNullOrEmpty(result.Error))
+                                {
+                                    <div class="alert alert-danger mt-2">
+                                        <strong>Error:</strong> @result.Error
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<style>
+    .pattern-card {
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .pattern-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+</style>
+
+@code {
+    private List<DesignPattern> behavioralPatterns = new();
+    private List<PatternExecutionResult> executionResults = new();
+    private bool loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        loading = true;
+        try
+        {
+            InitializePatterns();
+        }
+        finally
+        {
+            loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void InitializePatterns()
+    {
+        behavioralPatterns = new List<DesignPattern>
+        {
+            new DesignPattern
+            {
+                Name = "Observer",
+                Description = "Defines one-to-many dependency between objects",
+                Purpose = "Define one-to-many dependency between objects",
+                Example = "Event Handling",
+                Category = "Behavioral",
+                Icon = "👀",
+                Difficulty = "Beginner",
+                Benefits = new List<string>
+                {
+                    "Loose coupling between subject and observers",
+                    "Dynamic subscription/unsubscription",
+                    "Broadcast communication"
+                }
+            },
+            new DesignPattern
+            {
+                Name = "Strategy",
+                Description = "Defines family of algorithms and makes them interchangeable",
+                Purpose = "Define family of algorithms",
+                Example = "Payment Processing",
+                Category = "Behavioral",
+                Icon = "🎯",
+                Difficulty = "Beginner",
+                Benefits = new List<string>
+                {
+                    "Algorithm can vary independently from clients",
+                    "Eliminates conditional statements",
+                    "Runtime algorithm selection"
+                }
+            },
+            new DesignPattern
+            {
+                Name = "Command",
+                Description = "Encapsulates requests as objects",
+                Purpose = "Encapsulate requests as objects",
+                Example = "Undo/Redo Operations",
+                Category = "Behavioral",
+                Icon = "⚡",
+                Difficulty = "Intermediate",
+                Benefits = new List<string>
+                {
+                    "Decouples invoker from receiver",
+                    "Supports undo/redo operations",
+                    "Enables macro commands and queuing"
+                }
+            },
+            new DesignPattern
+            {
+                Name = "State",
+                Description = "Allows object to change behavior when internal state changes",
+                Purpose = "Change behavior when internal state changes",
+                Example = "Order Processing",
+                Category = "Behavioral",
+                Icon = "🔄",
+                Difficulty = "Intermediate",
+                Benefits = new List<string>
+                {
+                    "Localizes state-specific behavior",
+                    "Makes state transitions explicit",
+                    "State objects can be shared"
+                }
+            },
+            new DesignPattern
+            {
+                Name = "Template Method",
+                Description = "Defines skeleton of algorithm, lets subclasses override specific steps",
+                Purpose = "Define algorithm skeleton",
+                Example = "Data Processing Pipeline",
+                Category = "Behavioral",
+                Icon = "📋",
+                Difficulty = "Intermediate",
+                Benefits = new List<string>
+                {
+                    "Code reuse through inheritance",
+                    "Control over algorithm structure",
+                    "Hook methods for customization"
+                }
+            },
+            new DesignPattern
+            {
+                Name = "Chain of Responsibility",
+                Description = "Passes requests along chain of handlers",
+                Purpose = "Pass requests along chain of handlers",
+                Example = "Request Routing",
+                Category = "Behavioral",
+                Icon = "⛓️",
+                Difficulty = "Advanced",
+                Benefits = new List<string>
+                {
+                    "Decouples sender from receiver",
+                    "Dynamic chain composition",
+                    "Simplifies object interconnections"
+                }
+            },
+            new DesignPattern
+            {
+                Name = "Iterator",
+                Description = "Provides way to access elements sequentially",
+                Purpose = "Access elements sequentially",
+                Example = "Collection Traversal",
+                Category = "Behavioral",
+                Icon = "🔁",
+                Difficulty = "Expert",
+                Benefits = new List<string>
+                {
+                    "Uniform traversal interface",
+                    "Multiple traversal algorithms",
+                    "Simplified aggregate interface"
+                }
+            },
+            new DesignPattern
+            {
+                Name = "Mediator",
+                Description = "Defines how set of objects interact",
+                Purpose = "Define how objects interact",
+                Example = "Chat Room",
+                Category = "Behavioral",
+                Icon = "🤝",
+                Difficulty = "Advanced",
+                Benefits = new List<string>
+                {
+                    "Loose coupling between communicating objects",
+                    "Centralized control logic",
+                    "Reusable mediator objects"
+                }
+            },
+            new DesignPattern
+            {
+                Name = "Memento",
+                Description = "Captures and restores object state",
+                Purpose = "Capture and restore object state",
+                Example = "Game Save System",
+                Category = "Behavioral",
+                Icon = "💾",
+                Difficulty = "Expert",
+                Benefits = new List<string>
+                {
+                    "Preserves encapsulation boundaries",
+                    "Simplifies originator implementation",
+                    "Supports undo/redo operations"
+                }
+            },
+            new DesignPattern
+            {
+                Name = "Visitor",
+                Description = "Defines operations on object structure without changing classes",
+                Purpose = "Define operations on object structure",
+                Example = "AST Operations",
+                Category = "Behavioral",
+                Icon = "🚶",
+                Difficulty = "Expert",
+                Benefits = new List<string>
+                {
+                    "Easy to add new operations",
+                    "Gathers related behavior in one place",
+                    "Can work across class hierarchies"
+                }
+            }
+        };
+    }
+
+    private string GetPatternEndpoint(string patternName)
+    {
+        return patternName.ToLower() switch
+        {
+            "chain of responsibility" => "chain-of-responsibility",
+            "template method" => "template-method",
+            _ => patternName.ToLower()
+        };
+    }
+
+    private async Task ExecutePattern(string patternName)
+    {
+        loading = true;
+        try
+        {
+            var normalizedPatternName = GetPatternEndpoint(patternName);
+            var result = await ApiService.ExecutePatternAsync("Behavioral", normalizedPatternName);
+            executionResults.Add(result);
+            
+            // Trigger state change to ensure UI updates
+            StateHasChanged();
+            
+            // Small delay to ensure DOM is updated
+            await Task.Delay(100);
+            await InvokeAsync(() => StateHasChanged());
+        }
+        finally
+        {
+            loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ExecuteAllPatterns()
+    {
+        loading = true;
+        try
+        {
+            var result = await ApiService.ExecuteAllPatternsAsync("Behavioral");
+            executionResults.Add(result);
+        }
+        finally
+        {
+            loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshData()
+    {
+        executionResults.Clear();
+        await LoadData();
+    }
+}

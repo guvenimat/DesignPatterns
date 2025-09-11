@@ -1,0 +1,326 @@
+@page "/structural"
+@using DesignPatterns.Client.Services
+@using DesignPatterns.Client.Models
+@inject IDesignPatternsApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Structural Design Patterns</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Structural Patterns</li>
+                </ol>
+            </nav>
+            <h1 class="display-4">🔧 Structural Design Patterns</h1>
+            <p class="lead text-muted">Structural design patterns are concerned with how classes and objects are composed to form larger structures. They simplify the design by identifying simple ways to realize relationships between entities.</p>
+        </div>
+    </div>
+
+    @if (loading)
+    {
+        <div class="row">
+            <div class="col-12 text-center">
+                <div class="spinner-border text-success" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading structural patterns...</p>
+            </div>
+        </div>
+    }
+    else
+    {
+
+        <!-- Pattern Cards -->
+        <div class="row g-4 mb-4">
+            @foreach (var pattern in structuralPatterns)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 border-success pattern-card">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="card-title mb-0">
+                                @pattern.Icon @pattern.Name
+                                <span class="badge bg-light text-success ms-2 small">@pattern.Difficulty</span>
+                            </h5>
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <p class="card-text">@pattern.Description</p>
+                            <p class="text-muted small"><strong>Purpose:</strong> @pattern.Purpose</p>
+                            <p class="text-muted small"><strong>Example:</strong> @pattern.Example</p>
+                            
+                            @if (pattern.Benefits.Any())
+                            {
+                                <details class="mb-3">
+                                    <summary class="btn btn-sm btn-outline-info">Benefits</summary>
+                                    <ul class="mt-2 small">
+                                        @foreach (var benefit in pattern.Benefits)
+                                        {
+                                            <li>@benefit</li>
+                                        }
+                                    </ul>
+                                </details>
+                            }
+
+                            <div class="mt-auto d-grid gap-2">
+                                <button class="btn btn-success" @onclick="() => ExecutePattern(pattern.Name.ToLower())">
+                                    <i class="bi bi-play"></i> Execute Pattern
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Execution Results -->
+        @if (executionResults.Any())
+        {
+            <div class="row">
+                <div class="col-12">
+                    <h3>📊 Execution Results</h3>
+                    @foreach (var result in executionResults.OrderByDescending(r => r.ExecutedAt))
+                    {
+                        <div class="card mb-3 @(result.Success ? "border-success" : "border-danger")">
+                            <div class="card-header @(result.Success ? "bg-success" : "bg-danger") text-white">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">@result.Pattern</h6>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge @(result.Success ? "bg-light text-success" : "bg-light text-danger")">
+                                            @(result.Success ? "Success" : "Failed")
+                                        </span>
+                                        <small>@result.ExecutionTime.TotalMilliseconds ms</small>
+                                    </div>
+                                </div>
+                                <small>@result.ExecutedAt.ToString("HH:mm:ss")</small>
+                            </div>
+                            <div class="card-body">
+                                <p>@result.Description</p>
+                                @if (result.Success && !string.IsNullOrEmpty(result.FormattedResult))
+                                {
+                                    <details>
+                                        <summary class="btn btn-sm btn-outline-secondary">View JSON Result</summary>
+                                        <pre class="mt-2 p-3 bg-light rounded" style="max-height: 400px; overflow-y: auto;"><code>@result.FormattedResult</code></pre>
+                                    </details>
+                                }
+                                @if (!result.Success && !string.IsNullOrEmpty(result.Error))
+                                {
+                                    <div class="alert alert-danger mt-2">
+                                        <strong>Error:</strong> @result.Error
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<style>
+    .pattern-card {
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .pattern-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+</style>
+
+@code {
+    private List<DesignPattern> structuralPatterns = new();
+    private List<PatternExecutionResult> executionResults = new();
+    private bool loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        loading = true;
+        try
+        {
+            InitializePatterns();
+        }
+        finally
+        {
+            loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void InitializePatterns()
+    {
+        structuralPatterns = new List<DesignPattern>
+        {
+            new DesignPattern
+            {
+                Name = "Adapter",
+                Description = "Allows incompatible interfaces to work together",
+                Purpose = "Make incompatible interfaces work together",
+                Example = "Legacy System Integration",
+                Category = "Structural",
+                Icon = "🔌",
+                Difficulty = "Intermediate",
+                Benefits = new List<string>
+                {
+                    "Reuse existing code",
+                    "Separate interface conversion from business logic",
+                    "Follow Single Responsibility Principle"
+                }
+            },
+            new DesignPattern
+            {
+                Name = "Bridge",
+                Description = "Separates abstraction from implementation",
+                Purpose = "Separate abstraction from implementation",
+                Example = "Cross-platform Development",
+                Category = "Structural",
+                Icon = "🌉",
+                Difficulty = "Intermediate",
+                Benefits = new List<string>
+                {
+                    "Abstraction and implementation can vary independently",
+                    "Runtime switching of implementations",
+                    "Platform independence"
+                }
+            },
+            new DesignPattern
+            {
+                Name = "Composite",
+                Description = "Composes objects into tree structures",
+                Purpose = "Compose objects into tree structures",
+                Example = "File System Hierarchy",
+                Category = "Structural",
+                Icon = "🌳",
+                Difficulty = "Advanced",
+                Benefits = new List<string>
+                {
+                    "Uniform treatment of individual and composite objects",
+                    "Easy to add new component types",
+                    "Simplified client code"
+                }
+            },
+            new DesignPattern
+            {
+                Name = "Decorator",
+                Description = "Adds behavior to objects dynamically",
+                Purpose = "Add behavior to objects dynamically",
+                Example = "Middleware Pipeline",
+                Category = "Structural",
+                Icon = "🎨",
+                Difficulty = "Beginner",
+                Benefits = new List<string>
+                {
+                    "Add responsibilities to objects dynamically",
+                    "More flexible than inheritance",
+                    "Compose behaviors by wrapping objects"
+                }
+            },
+            new DesignPattern
+            {
+                Name = "Facade",
+                Description = "Provides simplified interface to complex subsystem",
+                Purpose = "Provide simplified interface to complex subsystem",
+                Example = "API Gateway",
+                Category = "Structural",
+                Icon = "🏛️",
+                Difficulty = "Beginner",
+                Benefits = new List<string>
+                {
+                    "Simplifies complex subsystems",
+                    "Reduces coupling between client and subsystem",
+                    "Provides clean interface"
+                }
+            },
+            new DesignPattern
+            {
+                Name = "Flyweight",
+                Description = "Minimizes memory usage by sharing efficiently",
+                Purpose = "Minimize memory usage by sharing efficiently",
+                Example = "Text Editor Characters",
+                Category = "Structural",
+                Icon = "🪶",
+                Difficulty = "Expert",
+                Benefits = new List<string>
+                {
+                    "Reduces memory consumption",
+                    "Improves performance for large numbers of objects",
+                    "Separates intrinsic and extrinsic state"
+                }
+            },
+            new DesignPattern
+            {
+                Name = "Proxy",
+                Description = "Provides placeholder to control access to another object",
+                Purpose = "Control access to another object",
+                Example = "Lazy Loading",
+                Category = "Structural",
+                Icon = "🛡️",
+                Difficulty = "Expert",
+                Benefits = new List<string>
+                {
+                    "Controls access to sensitive objects",
+                    "Lazy loading of expensive objects",
+                    "Caching and performance optimization"
+                }
+            }
+        };
+    }
+
+    private async Task ExecutePattern(string patternName)
+    {
+        loading = true;
+        try
+        {
+            var normalizedPatternName = GetPatternEndpoint(patternName);
+            var result = await ApiService.ExecutePatternAsync("Structural", normalizedPatternName);
+            executionResults.Add(result);
+            
+            // Trigger state change to ensure UI updates
+            StateHasChanged();
+            
+            // Small delay to ensure DOM is updated
+            await Task.Delay(100);
+            await InvokeAsync(() => StateHasChanged());
+        }
+        finally
+        {
+            loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetPatternEndpoint(string patternName)
+    {
+        return patternName.ToLower();
+    }
+
+    private async Task ExecuteAllPatterns()
+    {
+        loading = true;
+        try
+        {
+            var result = await ApiService.ExecuteAllPatternsAsync("Structural");
+            executionResults.Add(result);
+        }
+        finally
+        {
+            loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshData()
+    {
+        executionResults.Clear();
+        await LoadData();
+    }
+}

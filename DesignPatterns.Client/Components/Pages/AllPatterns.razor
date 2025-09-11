@@ -1,0 +1,329 @@
+@page "/patterns"
+@using DesignPatterns.Client.Services
+@using DesignPatterns.Client.Models
+@inject IDesignPatternsApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>All Design Patterns</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                    <li class="breadcrumb-item active">All Patterns</li>
+                </ol>
+            </nav>
+            <h1 class="display-4">🎯 All Design Patterns</h1>
+            <p class="lead text-muted">Design patterns are reusable solutions to common problems in software design. They provide a blueprint for how to solve a particular issue, but they aren't directly usable code. Instead, they are high-level concepts that help developers write more efficient and maintainable software.</p>
+        </div>
+    </div>
+
+    @if (loading)
+    {
+        <div class="row">
+            <div class="col-12 text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading all patterns...</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Filter Controls -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex gap-2 align-items-center">
+                    <label class="form-label mb-0">Filter by difficulty:</label>
+                    <select class="form-select" style="width: auto;" @onchange="FilterByDifficulty">
+                        <option value="">All Levels</option>
+                        <option value="Beginner">Beginner</option>
+                        <option value="Intermediate">Intermediate</option>
+                        <option value="Advanced">Advanced</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pattern Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center border-primary">
+                    <div class="card-body">
+                        <h3 class="text-primary">@creationalPatterns.Count</h3>
+                        <p class="card-text">Creational</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center border-success">
+                    <div class="card-body">
+                        <h3 class="text-success">@structuralPatterns.Count</h3>
+                        <p class="card-text">Structural</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center border-warning">
+                    <div class="card-body">
+                        <h3 class="text-warning">@behavioralPatterns.Count</h3>
+                        <p class="card-text">Behavioral</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center border-dark">
+                    <div class="card-body">
+                        <h3 class="text-dark">@GetTotalPatterns()</h3>
+                        <p class="card-text">Total Patterns</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Creational Patterns -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h3 class="border-bottom border-primary pb-2">
+                    <i class="bi bi-plus-circle text-primary"></i> Creational Patterns
+                </h3>
+                <div class="row g-3">
+                    @foreach (var pattern in GetFilteredPatterns(creationalPatterns))
+                    {
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100 border-primary">
+                                <div class="card-body">
+                                    <h6 class="card-title">@pattern.Icon @pattern.Name</h6>
+                                    <p class="card-text small">@pattern.Description</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-primary">@pattern.Difficulty</span>
+                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => ExecutePattern(pattern.Category, pattern.Name.ToLower())">
+                                            <i class="bi bi-play"></i> Execute
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Structural Patterns -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h3 class="border-bottom border-success pb-2">
+                    <i class="bi bi-building text-success"></i> Structural Patterns
+                </h3>
+                <div class="row g-3">
+                    @foreach (var pattern in GetFilteredPatterns(structuralPatterns))
+                    {
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100 border-success">
+                                <div class="card-body">
+                                    <h6 class="card-title">@pattern.Icon @pattern.Name</h6>
+                                    <p class="card-text small">@pattern.Description</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-success">@pattern.Difficulty</span>
+                                        <button class="btn btn-sm btn-outline-success" @onclick="() => ExecutePattern(pattern.Category, pattern.Name.ToLower())">
+                                            <i class="bi bi-play"></i> Execute
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Behavioral Patterns -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h3 class="border-bottom border-warning pb-2">
+                    <i class="bi bi-gear text-warning"></i> Behavioral Patterns
+                </h3>
+                <div class="row g-3">
+                    @foreach (var pattern in GetFilteredPatterns(behavioralPatterns))
+                    {
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100 border-warning">
+                                <div class="card-body">
+                                    <h6 class="card-title">@pattern.Icon @pattern.Name</h6>
+                                    <p class="card-text small">@pattern.Description</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge bg-warning text-dark">@pattern.Difficulty</span>
+                                        <button class="btn btn-sm btn-outline-warning" @onclick="() => ExecutePattern(pattern.Category, pattern.Name.ToLower())">
+                                            <i class="bi bi-play"></i> Execute
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Execution Results -->
+        @if (executionResults.Any())
+        {
+            <div class="row">
+                <div class="col-12">
+                    <h3>📊 Recent Execution Results</h3>
+                    <div class="row">
+                        @foreach (var result in executionResults.Take(6).OrderByDescending(r => r.ExecutedAt))
+                        {
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card @(result.Success ? "border-success" : "border-danger")">
+                                    <div class="card-header @(result.Success ? "bg-success" : "bg-danger") text-white">
+                                        <h6 class="mb-0">@result.Pattern</h6>
+                                        <small>@result.ExecutionTime.TotalMilliseconds ms</small>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="small">@result.Description</p>
+                                        @if (result.Success && !string.IsNullOrEmpty(result.FormattedResult))
+                                        {
+                                            <details>
+                                                <summary class="btn btn-sm btn-outline-secondary">View Result</summary>
+                                                <pre class="mt-2 p-2 bg-light rounded small" style="max-height: 200px; overflow-y: auto;"><code>@result.FormattedResult</code></pre>
+                                            </details>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private List<DesignPattern> creationalPatterns = new();
+    private List<DesignPattern> structuralPatterns = new();
+    private List<DesignPattern> behavioralPatterns = new();
+    private List<PatternExecutionResult> executionResults = new();
+    private bool loading = true;
+    private string selectedDifficulty = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        loading = true;
+        try
+        {
+            InitializeAllPatterns();
+        }
+        finally
+        {
+            loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void InitializeAllPatterns()
+    {
+        creationalPatterns = new List<DesignPattern>
+        {
+            new() { Name = "Singleton", Description = "Ensures a class has only one instance", Category = "Creational", Icon = "🏠", Difficulty = "Beginner" },
+            new() { Name = "Factory", Description = "Creates objects without specifying exact classes", Category = "Creational", Icon = "🏭", Difficulty = "Beginner" },
+            new() { Name = "Abstract Factory", Description = "Creates families of related objects", Category = "Creational", Icon = "🏢", Difficulty = "Intermediate" },
+            new() { Name = "Builder", Description = "Constructs complex objects step by step", Category = "Creational", Icon = "🔨", Difficulty = "Intermediate" },
+            new() { Name = "Prototype", Description = "Creates objects by cloning existing instances", Category = "Creational", Icon = "🧬", Difficulty = "Beginner" }
+        };
+
+        structuralPatterns = new List<DesignPattern>
+        {
+            new() { Name = "Adapter", Description = "Allows incompatible interfaces to work together", Category = "Structural", Icon = "🔌", Difficulty = "Beginner" },
+            new() { Name = "Bridge", Description = "Separates abstraction from implementation", Category = "Structural", Icon = "🌉", Difficulty = "Advanced" },
+            new() { Name = "Composite", Description = "Composes objects into tree structures", Category = "Structural", Icon = "🌳", Difficulty = "Intermediate" },
+            new() { Name = "Decorator", Description = "Adds behavior to objects dynamically", Category = "Structural", Icon = "🎨", Difficulty = "Intermediate" },
+            new() { Name = "Facade", Description = "Provides simplified interface to complex subsystem", Category = "Structural", Icon = "🏛️", Difficulty = "Beginner" },
+            new() { Name = "Flyweight", Description = "Minimizes memory usage with shared objects", Category = "Structural", Icon = "🪶", Difficulty = "Advanced" },
+            new() { Name = "Proxy", Description = "Provides placeholder or surrogate for another object", Category = "Structural", Icon = "🛡️", Difficulty = "Intermediate" }
+        };
+
+        behavioralPatterns = new List<DesignPattern>
+        {
+            new() { Name = "Observer", Description = "Defines one-to-many dependency between objects", Category = "Behavioral", Icon = "👁️", Difficulty = "Beginner" },
+            new() { Name = "Strategy", Description = "Defines family of algorithms and makes them interchangeable", Category = "Behavioral", Icon = "♟️", Difficulty = "Beginner" },
+            new() { Name = "Command", Description = "Encapsulates requests as objects", Category = "Behavioral", Icon = "📋", Difficulty = "Intermediate" },
+            new() { Name = "State", Description = "Allows object to alter behavior when internal state changes", Category = "Behavioral", Icon = "🔄", Difficulty = "Intermediate" },
+            new() { Name = "Template Method", Description = "Defines skeleton of algorithm in base class", Category = "Behavioral", Icon = "📝", Difficulty = "Beginner" },
+            new() { Name = "Chain of Responsibility", Description = "Passes request along chain of handlers", Category = "Behavioral", Icon = "⛓️", Difficulty = "Intermediate" },
+            new() { Name = "Iterator", Description = "Provides way to access elements sequentially", Category = "Behavioral", Icon = "🔁", Difficulty = "Beginner" },
+            new() { Name = "Mediator", Description = "Defines how objects interact with each other", Category = "Behavioral", Icon = "🤝", Difficulty = "Advanced" },
+            new() { Name = "Memento", Description = "Captures and restores object's internal state", Category = "Behavioral", Icon = "💾", Difficulty = "Intermediate" },
+            new() { Name = "Visitor", Description = "Separates algorithms from object structure", Category = "Behavioral", Icon = "🚶", Difficulty = "Advanced" }
+        };
+    }
+
+    private async Task ExecutePattern(string category, string pattern)
+    {
+        loading = true;
+        try
+        {
+            var normalizedPatternName = GetPatternEndpoint(pattern);
+            var result = await ApiService.ExecutePatternAsync(category, normalizedPatternName);
+            executionResults.Insert(0, result);
+            
+            // Keep only last 20 results
+            if (executionResults.Count > 20)
+                executionResults = executionResults.Take(20).ToList();
+                
+            // Trigger state change to ensure UI updates
+            StateHasChanged();
+            
+            // Small delay to ensure DOM is updated
+            await Task.Delay(100);
+            await InvokeAsync(() => StateHasChanged());
+        }
+        finally
+        {
+            loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetPatternEndpoint(string patternName)
+    {
+        return patternName.ToLower() switch
+        {
+            "abstract factory" => "abstract-factory",
+            "template method" => "template-method",
+            "chain of responsibility" => "chain-of-responsibility",
+            _ => patternName.ToLower()
+        };
+    }
+
+    private void FilterByDifficulty(ChangeEventArgs e)
+    {
+        selectedDifficulty = e.Value?.ToString() ?? "";
+        StateHasChanged();
+    }
+
+    private IEnumerable<DesignPattern> GetFilteredPatterns(List<DesignPattern> patterns)
+    {
+        if (string.IsNullOrEmpty(selectedDifficulty))
+            return patterns;
+        
+        return patterns.Where(p => p.Difficulty == selectedDifficulty);
+    }
+
+    private int GetTotalPatterns()
+    {
+        return GetFilteredPatterns(creationalPatterns).Count() + 
+               GetFilteredPatterns(structuralPatterns).Count() + 
+               GetFilteredPatterns(behavioralPatterns).Count();
+    }
+}

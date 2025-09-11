@@ -1,5 +1,13 @@
 # Visual Studio
 .vs/
+bin/
+obj/
+*.user
+*.suo
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
 *.suo
 *.user
 *.sln.docstates
