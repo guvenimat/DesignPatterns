@@ -1,7 +1,13 @@
-﻿@page "/"
+@page "/"
+@inject NavigationManager Navigation
 
-<PageTitle>Home</PageTitle>
-
-<h1>Hello, world!</h1>
-
-Welcome to your new app.
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Navigation.NavigateTo("/patterns", replace: true);
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+}

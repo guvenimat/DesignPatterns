@@ -1,0 +1,310 @@
+@page "/creational"
+@using DesignPatterns.Client.Services
+@using DesignPatterns.Client.Models
+@inject IDesignPatternsApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Creational Design Patterns</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Creational Patterns</li>
+                </ol>
+            </nav>
+            <h1 class="display-4">🏗️ Creational Design Patterns</h1>
+            <p class="lead text-muted">Creational design patterns are all about object creation mechanisms. They are used to create objects in a manner suitable for the situation, increasing flexibility and reusability.</p>
+        </div>
+    </div>
+
+    @if (loading)
+    {
+        <div class="row">
+            <div class="col-12 text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading creational patterns...</p>
+            </div>
+        </div>
+    }
+    else
+    {
+
+        <!-- Pattern Cards -->
+        <div class="row g-4 mb-4">
+            @foreach (var pattern in creationalPatterns)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 border-primary pattern-card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="card-title mb-0">
+                                @pattern.Icon @pattern.Name
+                                <span class="badge bg-light text-primary ms-2 small">@pattern.Difficulty</span>
+                            </h5>
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <p class="card-text">@pattern.Description</p>
+                            <p class="text-muted small"><strong>Purpose:</strong> @pattern.Purpose</p>
+                            <p class="text-muted small"><strong>Example:</strong> @pattern.Example</p>
+                            
+                            @if (pattern.Benefits.Any())
+                            {
+                                <details class="mb-3">
+                                    <summary class="btn btn-sm btn-outline-info">Benefits</summary>
+                                    <ul class="mt-2 small">
+                                        @foreach (var benefit in pattern.Benefits)
+                                        {
+                                            <li>@benefit</li>
+                                        }
+                                    </ul>
+                                </details>
+                            }
+
+                            <div class="mt-auto d-grid gap-2">
+                                <button class="btn btn-primary" @onclick="() => ExecutePattern(pattern.Name.ToLower())" disabled="@loading">
+                                    @if (loading)
+                                    {
+                                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                        <span> Executing...</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-play"></i> <span>Execute Pattern</span>
+                                    }
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Execution Results -->
+        @if (executionResults.Any())
+        {
+            <div class="row">
+                <div class="col-12">
+                    <div class="alert alert-info d-flex align-items-center mb-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>📊 Execution Results (@executionResults.Count)</strong>
+                        <span class="ms-auto text-muted">Latest results appear first</span>
+                    </div>
+                    @foreach (var result in executionResults.OrderByDescending(r => r.ExecutedAt))
+                    {
+                        <div class="card mb-3 @(result.Success ? "border-success" : "border-danger")">
+                            <div class="card-header @(result.Success ? "bg-success" : "bg-danger") text-white">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">@result.Pattern</h6>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge @(result.Success ? "bg-light text-success" : "bg-light text-danger")">
+                                            @(result.Success ? "Success" : "Failed")
+                                        </span>
+                                        <small>@result.ExecutionTime.TotalMilliseconds ms</small>
+                                    </div>
+                                </div>
+                                <small>@result.ExecutedAt.ToString("HH:mm:ss")</small>
+                            </div>
+                            <div class="card-body">
+                                <p>@result.Description</p>
+                                @if (result.Success && !string.IsNullOrEmpty(result.FormattedResult))
+                                {
+                                    <details>
+                                        <summary class="btn btn-sm btn-outline-secondary">View JSON Result</summary>
+                                        <pre class="mt-2 p-3 bg-light rounded" style="max-height: 400px; overflow-y: auto;"><code>@result.FormattedResult</code></pre>
+                                    </details>
+                                }
+                                @if (!result.Success && !string.IsNullOrEmpty(result.Error))
+                                {
+                                    <div class="alert alert-danger mt-2">
+                                        <strong>Error:</strong> @result.Error
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<style>
+    .pattern-card {
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .pattern-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+</style>
+
+@code {
+    private List<DesignPattern> creationalPatterns = new();
+    private List<PatternExecutionResult> executionResults = new();
+    private bool loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        loading = true;
+        try
+        {
+            InitializePatterns();
+        }
+        finally
+        {
+            loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void InitializePatterns()
+    {
+        creationalPatterns = new List<DesignPattern>
+        {
+            new DesignPattern
+            {
+                Name = "Singleton",
+                Description = "Ensures a class has only one instance and provides global access",
+                Purpose = "Ensure only one instance exists",
+                Example = "Configuration Manager",
+                Category = "Creational",
+                Icon = "🏠",
+                Difficulty = "Beginner",
+                Benefits = new List<string>
+                {
+                    "Controlled access to single instance",
+                    "Reduced memory footprint",
+                    "Global point of access"
+                }
+            },
+            new DesignPattern
+            {
+                Name = "Factory",
+                Description = "Creates objects without specifying exact classes",
+                Purpose = "Create objects without knowing exact types",
+                Example = "Product Creation",
+                Category = "Creational",
+                Icon = "🏭",
+                Difficulty = "Beginner",
+                Benefits = new List<string>
+                {
+                    "Loose coupling between creator and products",
+                    "Easy to extend with new products",
+                    "Centralizes object creation logic"
+                }
+            },
+            new DesignPattern
+            {
+                Name = "Abstract-Factory",
+                Description = "Creates families of related objects",
+                Purpose = "Create families of related objects",
+                Example = "UI Themes",
+                Category = "Creational",
+                Icon = "🏢",
+                Difficulty = "Advanced",
+                Benefits = new List<string>
+                {
+                    "Ensures product compatibility",
+                    "Easy to switch between families",
+                    "Promotes consistency among products"
+                }
+            },
+            new DesignPattern
+            {
+                Name = "Builder",
+                Description = "Constructs complex objects step by step",
+                Purpose = "Construct complex objects step by step",
+                Example = "SQL Query Builder",
+                Category = "Creational",
+                Icon = "🔧",
+                Difficulty = "Intermediate",
+                Benefits = new List<string>
+                {
+                    "Fine control over construction process",
+                    "Different representations of same object",
+                    "Isolates complex construction code"
+                }
+            },
+            new DesignPattern
+            {
+                Name = "Prototype",
+                Description = "Creates objects by cloning existing instances",
+                Purpose = "Create objects by cloning existing instances",
+                Example = "Game Object Spawning",
+                Category = "Creational",
+                Icon = "🧬",
+                Difficulty = "Expert",
+                Benefits = new List<string>
+                {
+                    "Reduces expensive object creation",
+                    "Runtime product specification",
+                    "Reduces subclassing"
+                }
+            }
+        };
+    }
+
+    private async Task ExecutePattern(string patternName)
+    {
+        loading = true;
+        try
+        {
+            var normalizedPatternName = GetPatternEndpoint(patternName);
+            var result = await ApiService.ExecutePatternAsync("Creational", normalizedPatternName);
+            executionResults.Add(result);
+            
+            // Trigger state change to ensure UI updates
+            StateHasChanged();
+            
+            // Small delay to ensure DOM is updated, then scroll to results
+            await Task.Delay(100);
+            await InvokeAsync(() => StateHasChanged());
+        }
+        finally
+        {
+            loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetPatternEndpoint(string patternName)
+    {
+        return patternName.ToLower() switch
+        {
+            "abstract-factory" => "abstract-factory",
+            _ => patternName.ToLower()
+        };
+    }
+
+    private async Task ExecuteAllPatterns()
+    {
+        loading = true;
+        try
+        {
+            var result = await ApiService.ExecuteAllPatternsAsync("Creational");
+            executionResults.Add(result);
+        }
+        finally
+        {
+            loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshData()
+    {
+        executionResults.Clear();
+        await LoadData();
+    }
+}

@@ -1,0 +1,134 @@
+@using DesignPatterns.Client.Models
+
+<div class="pattern-result-display">
+    @if (Result != null)
+    {
+        <div class="card @(Result.Success ? "border-success" : "border-danger") mb-3">
+            <div class="card-header @(Result.Success ? "bg-success" : "bg-danger") text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="bi @(Result.Success ? "bi-check-circle" : "bi-x-circle")"></i>
+                        @Result.Pattern
+                    </h6>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge @(Result.Success ? "bg-light text-success" : "bg-light text-danger")">
+                            @(Result.Success ? "Success" : "Failed")
+                        </span>
+                        <small>@Result.ExecutionTime.TotalMilliseconds ms</small>
+                    </div>
+                </div>
+                <small>Executed at @Result.ExecutedAt.ToString("HH:mm:ss")</small>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">@Result.Description</p>
+                
+                @if (Result.Success && !string.IsNullOrEmpty(Result.FormattedResult))
+                {
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0">Execution Result:</h6>
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="ToggleResultVisibility">
+                                <i class="bi @(showResult ? "bi-eye-slash" : "bi-eye")"></i>
+                                @(showResult ? "Hide" : "Show") JSON
+                            </button>
+                        </div>
+                        
+                        @if (showResult)
+                        {
+                            <div class="result-container">
+                                <pre class="bg-light p-3 rounded border" style="max-height: 400px; overflow-y: auto;"><code>@Result.FormattedResult</code></pre>
+                                @if (ShowCopyButton)
+                                {
+                                    <button class="btn btn-sm btn-outline-primary mt-2" @onclick="CopyToClipboard">
+                                        <i class="bi bi-clipboard"></i> Copy JSON
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                
+                @if (!Result.Success && !string.IsNullOrEmpty(Result.Error))
+                {
+                    <div class="alert alert-danger mt-3">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-exclamation-triangle"></i> Error Details:
+                        </h6>
+                        <p class="mb-0">@Result.Error</p>
+                    </div>
+                }
+
+                @if (ShowMetadata)
+                {
+                    <div class="mt-3 pt-3 border-top">
+                        <h6>Execution Metadata:</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <small class="text-muted">
+                                    <strong>Pattern:</strong> @Result.Pattern<br>
+                                    <strong>Status:</strong> @(Result.Success ? "Success" : "Failed")<br>
+                                    <strong>Execution Time:</strong> @Result.ExecutionTime.TotalMilliseconds ms
+                                </small>
+                            </div>
+                            <div class="col-md-6">
+                                <small class="text-muted">
+                                    <strong>Executed At:</strong> @Result.ExecutedAt.ToString("yyyy-MM-dd HH:mm:ss")<br>
+                                    <strong>Result Size:</strong> @(Result.FormattedResult?.Length ?? 0) characters
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public PatternExecutionResult? Result { get; set; }
+    [Parameter] public bool ShowCopyButton { get; set; } = true;
+    [Parameter] public bool ShowMetadata { get; set; } = false;
+    [Parameter] public bool InitiallyExpanded { get; set; } = false;
+
+    private bool showResult;
+
+    protected override void OnInitialized()
+    {
+        showResult = InitiallyExpanded;
+    }
+
+    private void ToggleResultVisibility()
+    {
+        showResult = !showResult;
+    }
+
+    private async Task CopyToClipboard()
+    {
+        if (!string.IsNullOrEmpty(Result?.FormattedResult))
+        {
+            // In a real application, you would use JavaScript interop to copy to clipboard
+            // For now, we'll just show a simple indication
+            StateHasChanged();
+        }
+    }
+}
+
+<style>
+    .pattern-result-display .result-container {
+        position: relative;
+    }
+
+    .pattern-result-display pre {
+        font-family: 'Courier New', monospace;
+        font-size: 0.875rem;
+        line-height: 1.4;
+    }
+
+    .pattern-result-display .card {
+        transition: box-shadow 0.2s ease-in-out;
+    }
+
+    .pattern-result-display .card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+</style>
